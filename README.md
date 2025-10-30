@@ -31,7 +31,7 @@ A web-based converter that transforms rich formatted text into Telegram's markup
 
 ## 🌐 Live Demo
 
-[Add your GitHub Pages link here]
+[Link](https://grenka054.github.io/richtext2telegram/)
 
 ## 📦 Installation
 
