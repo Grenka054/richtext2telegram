@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Rich Text Converter</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0088cc, #34b7f1);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        header {
+            background-color: #0088cc;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .version-switcher {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 4px;
+        }
+        
+        .version-btn {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: white;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .version-btn.active {
+            background: white;
+            color: #0088cc;
+            font-weight: 600;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+            gap: 20px;
+        }
+        
+        .panel {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .panel-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #0088cc;
+        }
+        
+        .rich-text-editor {
+            flex: 1;
+            min-height: 300px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            line-height: 1.5;
+            overflow-y: auto;
+            outline: none;
+        }
+        
+        .rich-text-editor[contenteditable="true"]:empty:before {
+            content: "Paste your formatted text here...";
+            color: #999;
+        }
+        
+        .current-version {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        
+        textarea {
+            width: 100%;
+            flex: 1;
+            min-height: 300px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: vertical;
+            font-size: 16px;
+            line-height: 1.5;
+            font-family: monospace;
+        }
+        
+        .instructions {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .instructions h3 {
+            color: #0088cc;
+            margin-bottom: 15px;
+        }
+        
+        .formatting-rules {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .format-section {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .format-section h4 {
+            color: #0088cc;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid;
+        }
+        
+        .web-version h4 {
+            border-color: #4ecdc4;
+        }
+        
+        .desktop-version h4 {
+            border-color: #ff6b6b;
+        }
+        
+        .instructions ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            padding-left: 15px;
+            position: relative;
+            font-size: 14px;
+        }
+        
+        .instructions li:before {
+            content: "•";
+            color: #0088cc;
+            position: absolute;
+            left: 0;
+        }
+        
+        .example {
+            background-color: #eef7ff;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 15px 0;
+            font-size: 14px;
+        }
+        
+        .limitation {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 6px;
+            padding: 12px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+                        
+            .formatting-rules {
+                grid-template-columns: 1fr;
+            }
+            
+            .version-switcher {
+                position: static;
+                margin-top: 10px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Telegram Rich Text Converter</h1>
+            <p>Paste formatted text and convert to Telegram markup</p>
+            <div class="version-switcher">
+                <button class="version-btn active" data-version="desktop">Desktop</button>
+                <button class="version-btn" data-version="web">Web</button>
+            </div>
+        </header>
+        
+        <div class="content">
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">Rich Text Input</div>
+                    <div style="font-size: 14px; color: #666;">Paste formatted text here</div>
+                </div>
+                <div class="rich-text-editor" id="rich-text-editor" contenteditable="true"></div>
+            </div>
+            
+
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">Telegram Formatted Output</div>
+                    <button class="format-btn" id="copy-btn">Copy</button>
+                </div>
+                <textarea id="telegram-output" placeholder="Telegram formatted text will appear here..." readonly></textarea>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>How to use:</h3>
+            <ul>
+                <li>Select your Telegram version (Desktop/Web) using the switcher in header</li>
+                <li>Copy formatted text from any application (Word, Google Docs, web pages)</li>
+                <li>Paste it into the left panel - you should see the formatting preserved</li>
+                <li>Copy the Telegram-formatted text from the right panel</li>
+            </ul>
+            
+            <div class="warning">
+                <strong>Important:</strong> Telegram Desktop and Web versions handle combined formatting (bold+italic) differently. 
+                Use the switcher to match your client version.
+            </div>
+            
+            <div class="formatting-rules">
+                <div class="format-section desktop-version">
+                    <h4>Desktop Version Formatting</h4>
+                    <ul>
+                        <li><strong>Bold</strong>: **text**</li>
+                        <li><strong>Italic</strong>: __text__</li>
+                        <li><strong>Monospace</strong>: ```text```</li>
+                        <li><strong>Strikethrough</strong>: ~~text~~</li>
+                        <li><strong>Spoiler</strong>: ||text||</li>
+                    </ul>
+                </div>
+                
+                <div class="format-section web-version">
+                    <h4>Web Version Formatting</h4>
+                    <ul>
+                        <li><strong>Bold</strong>: **text**</li>
+                        <li><strong>Italic</strong>: __text__</li>
+                        <li><strong>Bold + Italic</strong>: **__text__**</li>
+                        <li><strong>Monospace</strong>: ```text```</li>
+                        <li><strong>Strikethrough</strong>: ~~text~~</li>
+                        <li><strong>Spoiler</strong>: ||text||</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const richTextEditor = document.getElementById('rich-text-editor');
+            const telegramOutput = document.getElementById('telegram-output');
+            const copyBtn = document.getElementById('copy-btn');
+            const versionBtns = document.querySelectorAll('.version-btn');
+            const currentVersion = document.getElementById('current-version');
+
+            let currentVersionType = 'desktop';
+
+            // Version switcher
+            versionBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    versionBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentVersionType = this.dataset.version;
+                    currentVersion.textContent = this.dataset.version === 'desktop' ? 'Desktop Version' : 'Web Version';
+                    convertRichTextToTelegram();
+                });
+            });
+
+            // Copy button
+            copyBtn.addEventListener('click', function() {
+                telegramOutput.select();
+                document.execCommand('copy');
+                
+                // Visual feedback
+                const originalText = this.textContent;
+                this.textContent = 'Copied!';
+                setTimeout(() => {
+                    this.textContent = originalText;
+                }, 2000);
+            });
+
+            // Auto-convert on input
+            richTextEditor.addEventListener('input', convertRichTextToTelegram);
+
+            function convertRichTextToTelegram() {
+                const htmlContent = richTextEditor.innerHTML;
+                let telegramText = htmlToTelegramFormat(htmlContent);
+                telegramOutput.value = telegramText;
+            }
+
+            function htmlToTelegramFormat(html) {
+                let text = html;
+
+                if (currentVersionType === 'desktop') {
+                    // Desktop version - only single formatting allowed
+                    text = processDesktopFormatting(text);
+                } else {
+                    // Web version - supports combined formatting
+                    text = processWebFormatting(text);
+                }
+                
+                // Clean up
+                text = cleanUpText(text);
+                
+                return text.trim();
+            }
+
+            function processDesktopFormatting(text) {
+                // For Desktop: only apply one formatting type, priority: bold > italic
+                
+                // First, find all elements with combined formatting
+                const combinedRegex = /<(?:(?:strong|b)[^>]*>.*?<(?:em|i)[^>]*>|(?:em|i)[^>]*>.*?<(?:strong|b)[^>]*>)/gi;
+                
+                // Replace combined formatting with just bold (priority to bold)
+                text = text.replace(/<(?:strong|b)[^>]*>(.*?)<\/(?:strong|b)>\s*<(?:em|i)[^>]*>(.*?)<\/(?:em|i)>/gi, '**$1$2**');
+                text = text.replace(/<(?:em|i)[^>]*>(.*?)<\/(?:em|i)>\s*<(?:strong|b)[^>]*>(.*?)<\/(?:strong|b)>/gi, '**$1$2**');
+                
+                // Handle nested combined formatting
+                text = text.replace(/<(?:strong|b)[^>]*><(?:em|i)[^>]*>(.*?)<\/(?:em|i)><\/(?:strong|b)>/gi, '**$1**');
+                text = text.replace(/<(?:em|i)[^>]*><(?:strong|b)[^>]*>(.*?)<\/(?:strong|b)><\/(?:em|i)>/gi, '**$1**');
+                
+                // Now process individual formatting
+                text = text.replace(/<b>(.*?)<\/b>/gi, '**$1**');
+                text = text.replace(/<strong>(.*?)<\/strong>/gi, '**$1**');
+                text = text.replace(/<i>(.*?)<\/i>/gi, '__$1__');
+                text = text.replace(/<em>(.*?)<\/em>/gi, '__$1__');
+                
+                // CSS styles
+                text = text.replace(/<span[^>]*style=[^>]*font-weight:\s*bold[^>]*>(.*?)<\/span>/gi, '**$1**');
+                text = text.replace(/<span[^>]*style=[^>]*font-style:\s*italic[^>]*>(.*?)<\/span>/gi, '__$1__');
+                
+                return text;
+            }
+
+            function processWebFormatting(text) {
+                // Web version - supports combined formatting
+                
+                // Process combined formatting first
+                text = text.replace(/<(?:strong|b)[^>]*><(?:em|i)[^>]*>(.*?)<\/(?:em|i)><\/(?:strong|b)>/gi, '**__$1__**');
+                text = text.replace(/<(?:em|i)[^>]*><(?:strong|b)[^>]*>(.*?)<\/(?:strong|b)><\/(?:em|i)>/gi, '**__$1__**');
+                
+                // CSS combined formatting
+                text = text.replace(/<span[^>]*style=[^>]*font-weight:\s*bold;[^>]*font-style:\s*italic[^>]*>(.*?)<\/span>/gi, '**__$1__**');
+                text = text.replace(/<span[^>]*style=[^>]*font-style:\s*italic;[^>]*font-weight:\s*bold[^>]*>(.*?)<\/span>/gi, '**__$1__**');
+                
+                // Then process individual formatting
+                text = text.replace(/<b>(.*?)<\/b>/gi, '**$1**');
+                text = text.replace(/<strong>(.*?)<\/strong>/gi, '**$1**');
+                text = text.replace(/<i>(.*?)<\/i>/gi, '__$1__');
+                text = text.replace(/<em>(.*?)<\/em>/gi, '__$1__');
+                
+                // CSS individual formatting
+                text = text.replace(/<span[^>]*style=[^>]*font-weight:\s*bold[^>]*>(.*?)<\/span>/gi, '**$1**');
+                text = text.replace(/<span[^>]*style=[^>]*font-style:\s*italic[^>]*>(.*?)<\/span>/gi, '__$1__');
+                
+                return text;
+            }
+
+            function cleanUpText(text) {
+                // Process other formatting (common for both versions)
+                
+                // Strikethrough
+                text = text.replace(/<s>(.*?)<\/s>/gi, '~~$1~~');
+                text = text.replace(/<strike>(.*?)<\/strike>/gi, '~~$1~~');
+                text = text.replace(/<del>(.*?)<\/del>/gi, '~~$1~~');
+                
+                // Monospace/code
+                text = text.replace(/<code>(.*?)<\/code>/gi, '```$1```');
+                text = text.replace(/<pre>(.*?)<\/pre>/gi, '```$1```');
+                
+                // Underline (not directly supported)
+                text = text.replace(/<u>(.*?)<\/u>/gi, '$1');
+                
+                // Remove other HTML tags but keep content
+                text = text.replace(/<[^>]*>/g, '');
+                
+                // Handle HTML entities
+                text = text.replace(/&nbsp;/g, ' ');
+                text = text.replace(/&amp;/g, '&');
+                text = text.replace(/&lt;/g, '<');
+                text = text.replace(/&gt;/g, '>');
+                text = text.replace(/&quot;/g, '"');
+                text = text.replace(/&#39;/g, "'");
+                
+                // Clean up multiple spaces and newlines
+                text = text.replace(/\s+/g, ' ');
+                text = text.replace(/\n\s*\n/g, '\n\n');
+                
+                return text;
+            }
+
+            // Initialize with example content
+            setTimeout(() => {
+                richTextEditor.innerHTML = `
+                    <p><strong>This is bold text</strong> and <em>this is italic text</em>.</p>
+                    <p>You can also have <strong><em>bold and italic text</em></strong> combined.</p>
+                    <p>For code: <code>monospace text</code></p>
+                    <p><s>Strikethrough text</s> and normal text.</p>
+                `;
+                convertRichTextToTelegram();
+            }, 100);
+        });
+    </script>
+</body>
+</html>
